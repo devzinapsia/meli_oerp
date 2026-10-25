@@ -1679,7 +1679,9 @@ class mercadolibre_orders(models.Model):
                     {'access_token': meli.access_token},
                     extra_headers={'x-version': '2'},
                 )
-                if response is not None and getattr(response, 'status_code', 0) == 200:
+                # SdS 2026-07-11: meli.get() con extra_headers devuelve el wrapper (con .json())
+                # y NO un requests.Response, por eso no tiene .status_code. Se evalua por contenido.
+                if response is not None and response.json():
                     biljson = response.json() or {}
                     # v2 wraps billing_info under buyer
                     api_billing_info = (
