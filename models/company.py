@@ -2032,7 +2032,12 @@ class res_company(models.Model):
             icommit = 0
             icount = 0
             maxcommits = len(product_ids)
-            topcommits = 80
+            # topcommits: tope de publicaciones de PRECIO por corrida del cron "Cron Meli
+            # Process Post Price". Configurable via parametro de sistema
+            # gigli.meli_price_topcommits (ticket #00415) para poder subirlo sin redeploy;
+            # default 500. OJO: usar con max_cron_threads>=2, si no una corrida larga
+            # monopoliza el unico hilo de cron y frena el drenado de notificaciones.
+            topcommits = int(self.env['ir.config_parameter'].sudo().get_param('gigli.meli_price_topcommits', 500))
 
             #meli = self.env['meli.util'].get_new_instance(company)
 
