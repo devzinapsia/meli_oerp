@@ -327,42 +327,25 @@ def SaleOrderLineUomField(self):
 
 
 def UpdateProductType( product ):
+    # SdS 2026-07-15: escribir SOLO si el valor realmente cambia. Antes reescribia
+    # type/is_storable en CADA pedido (ademas de un UPDATE product_template crudo),
+    # generando deadlocks sobre product_template. El UPDATE crudo se elimino.
     if not product:
         return
     for prod in product:
-        if (prod and "detailed_type" in prod._fields and prod.detailed_type not in ['product']):
-            failed = False
+        vals = {}
+        if ("detailed_type" in prod._fields and prod.detailed_type not in ['product', 'consu']):
+            vals['detailed_type'] = 'consu'
+        if ("type" in prod._fields and prod.type != 'consu'):
+            vals['type'] = 'consu'
+        if ("is_storable" in prod._fields and not prod.is_storable):
+            vals['is_storable'] = True
+        if vals:
             try:
-                prod.write( { 'detailed_type': 'consu' } )
+                prod.write(vals)
             except Exception as e:
-                _logger.info("Set detailed_type almacenable ('consu') not possible:")
+                _logger.info("UpdateProductType: no se pudo setear %s en id=%s", vals, prod.id)
                 _logger.error(e, exc_info=True)
-                failed = True
-                pass;
-
-        if (prod and "type" in prod._fields and prod.type not in ['product']):
-            failed = False
-            try:
-                prod.write( { 'type': 'consu' } )
-            except Exception as e:
-                _logger.info("Set type almacenable ('consu') not possible:")
-                _logger.error(e, exc_info=True)
-                failed = True
-                pass;
-
-        if (prod and "is_storable" in prod._fields and prod.is_storable):
-            failed = False
-            try:
-                prod.write( { 'is_storable': True } )
-            except Exception as e:
-                _logger.info("Set type is_storable ('is_storable') not possible:")
-                _logger.error(e, exc_info=True)
-                failed = True
-                pass;
-
-            query = """UPDATE product_template SET type='consu', is_storable=True WHERE id=%i""" % (prod.id)
-            cr = prod.env.cr
-            respquery = cr.execute(query)
 
 def ProductType():
     return {
